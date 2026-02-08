@@ -5,31 +5,45 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>BeamFEA — 2D Finite Element Beam Analysis</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#09090b">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        sans: ['Inter', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace']
+      }
+    }
+  }
+}
+</script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg-primary:#0f172a;--bg-secondary:#1e293b;--bg-tertiary:#334155;
-  --accent:#3b82f6;--accent-hover:#2563eb;--accent-dim:#1e3a5f;
-  --danger:#ef4444;--success:#22c55e;--warning:#f59e0b;
-  --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;
-  --border:#475569;--border-light:#334155;
-  --radius:6px;--radius-lg:10px;
-  --font-mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+  --bg-primary:#09090b;--bg-secondary:#18181b;--bg-tertiary:#27272a;
+  --accent:#f59e0b;--accent-hover:#fbbf24;--accent-dim:rgba(245,158,11,0.1);
+  --danger:#f87171;--success:#4ade80;--warning:#f59e0b;
+  --text-primary:#f4f4f5;--text-secondary:#a1a1aa;--text-muted:#71717a;
+  --border:#3f3f46;--border-light:#3f3f46;
+  --radius:8px;--radius-lg:12px;
+  --font-mono:'JetBrains Mono',monospace;
 }
-html,body{height:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+html,body{height:100%;font-family:'Inter',system-ui,sans-serif;
   background:var(--bg-primary);color:var(--text-primary);font-size:13px;overflow:hidden}
 #app{display:flex;flex-direction:column;height:100vh}
 header{display:flex;align-items:center;justify-content:space-between;
-  padding:8px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border-light);flex-shrink:0}
+  padding:8px 16px;background:rgba(24,24,27,0.8);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-bottom:1px solid var(--border-light);flex-shrink:0;position:sticky;top:0;z-index:40}
 .logo{display:flex;align-items:center;gap:10px}
 .logo svg{width:28px;height:28px}
-.logo h1{font-size:16px;font-weight:700;letter-spacing:-0.5px}
+.logo h1{font-size:16px;font-weight:700;letter-spacing:-0.5px;font-family:var(--font-mono);color:var(--accent)}
 .logo span{font-size:11px;color:var(--text-muted);margin-left:4px;font-weight:400}
-#solve-btn{background:var(--accent);color:#fff;border:none;padding:8px 24px;
-  border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;
+#solve-btn{background:var(--accent);color:#18181b;border:none;padding:8px 24px;
+  border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-mono);
   display:flex;align-items:center;gap:6px;transition:background .15s}
 #solve-btn:hover{background:var(--accent-hover)}
 #solve-btn:active{transform:scale(0.97)}
@@ -37,9 +51,10 @@ header{display:flex;align-items:center;justify-content:space-between;
 main{display:flex;flex:1;overflow:hidden}
 #sidebar{width:280px;flex-shrink:0;background:var(--bg-secondary);border-right:1px solid var(--border-light);
   overflow-y:auto;overflow-x:hidden}
-#sidebar::-webkit-scrollbar{width:5px}
-#sidebar::-webkit-scrollbar-track{background:transparent}
-#sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#18181b}
+::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:#52525b}
 .panel{border-bottom:1px solid var(--border-light)}
 .panel-header{display:flex;align-items:center;justify-content:space-between;
   padding:10px 14px;cursor:pointer;user-select:none;transition:background .1s}
@@ -61,16 +76,16 @@ main{display:flex;flex:1;overflow:hidden}
 .computed strong{color:var(--accent)}
 #section-preview{width:100%;height:110px;border-radius:var(--radius);display:block;margin-top:8px}
 .item-list{max-height:120px;overflow-y:auto;margin-bottom:8px}
-.item-list::-webkit-scrollbar{width:4px}
-.item-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.item-list::-webkit-scrollbar{width:6px}
+.item-list::-webkit-scrollbar-thumb{background:#3f3f46;border-radius:4px}
 .list-item{display:flex;align-items:center;justify-content:space-between;
   padding:5px 8px;background:var(--bg-primary);border-radius:var(--radius);margin-bottom:4px;font-size:12px}
 .list-item .info{font-family:var(--font-mono);color:var(--text-secondary)}
 .list-item .tag{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600;text-transform:uppercase}
-.tag-pin{background:#22c55e22;color:#22c55e}.tag-fixed{background:#f59e0b22;color:#f59e0b}
-.tag-roller{background:#3b82f622;color:#3b82f6}
-.tag-point{background:#ef444422;color:#ef4444}.tag-distributed{background:#a855f722;color:#a855f7}
-.tag-moment{background:#06b6d422;color:#06b6d4}
+.tag-pin{background:#4ade8022;color:#4ade80}.tag-fixed{background:#f59e0b22;color:#f59e0b}
+.tag-roller{background:#fbbf2422;color:#fbbf24}
+.tag-point{background:#f8717122;color:#f87171}.tag-distributed{background:#f59e0b22;color:#f59e0b}
+.tag-moment{background:#eab30822;color:#eab308}
 .remove-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;
   padding:2px 4px;border-radius:3px;line-height:1;transition:all .1s}
 .remove-btn:hover{color:var(--danger);background:rgba(239,68,68,.1)}
@@ -81,7 +96,7 @@ main{display:flex;flex:1;overflow:hidden}
 .add-row input{width:60px}
 .add-btn{background:var(--accent-dim);color:var(--accent);border:none;padding:4px 10px;
   border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}
-.add-btn:hover{background:var(--accent);color:#fff}
+.add-btn:hover{background:var(--accent);color:#18181b}
 #workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:10px}
 #beam-view{flex:0 0 200px;background:var(--bg-secondary);border-radius:var(--radius-lg);
   border:1px solid var(--border-light);position:relative;overflow:hidden}
@@ -118,13 +133,13 @@ main{display:flex;flex:1;overflow:hidden}
   <header>
     <div class="logo">
       <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="2" y="11" width="24" height="6" rx="1" fill="#3b82f6" opacity=".3"/>
-        <rect x="2" y="11" width="24" height="6" rx="1" stroke="#3b82f6" stroke-width="1.5"/>
-        <path d="M4 17 L4 24 M8 17 L4 24 M0 24 L8 24" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
-        <circle cx="24" cy="23" r="2.5" stroke="#3b82f6" stroke-width="1.5"/>
-        <line x1="20" y1="24.5" x2="28" y2="24.5" stroke="#3b82f6" stroke-width="1.5"/>
-        <path d="M14 5 L14 11" stroke="#ef4444" stroke-width="1.5"/>
-        <path d="M11 8 L14 11 L17 8" stroke="#ef4444" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="2" y="11" width="24" height="6" rx="1" fill="#f59e0b" opacity=".3"/>
+        <rect x="2" y="11" width="24" height="6" rx="1" stroke="#f59e0b" stroke-width="1.5"/>
+        <path d="M4 17 L4 24 M8 17 L4 24 M0 24 L8 24" stroke="#4ade80" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="23" r="2.5" stroke="#fbbf24" stroke-width="1.5"/>
+        <line x1="20" y1="24.5" x2="28" y2="24.5" stroke="#fbbf24" stroke-width="1.5"/>
+        <path d="M14 5 L14 11" stroke="#f87171" stroke-width="1.5"/>
+        <path d="M11 8 L14 11 L17 8" stroke="#f87171" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <h1>BeamFEA <span>2D Analysis</span></h1>
     </div>
@@ -856,7 +871,7 @@ function drawBeam() {
   const nodeX = (i) => pad.l + (i / (numNodes - 1)) * bw;
 
   // Grid / reference line
-  ctx.strokeStyle = '#334155';
+  ctx.strokeStyle = '#3f3f46';
   ctx.lineWidth = 1;
   ctx.setLineDash([4, 4]);
   ctx.beginPath();
@@ -871,7 +886,7 @@ function drawBeam() {
     const maxD = Math.max(...r.deflections.map(Math.abs));
     const scale = maxD > 0 ? (bh * 0.35) / maxD : 1;
 
-    ctx.strokeStyle = '#3b82f6';
+    ctx.strokeStyle = '#f59e0b';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     for (let i = 0; i < numNodes; i++) {
@@ -884,7 +899,7 @@ function drawBeam() {
 
     // Filled area
     ctx.globalAlpha = 0.08;
-    ctx.fillStyle = '#3b82f6';
+    ctx.fillStyle = '#f59e0b';
     ctx.beginPath();
     ctx.moveTo(nodeX(0), beamY);
     for (let i = 0; i < numNodes; i++) {
@@ -897,7 +912,7 @@ function drawBeam() {
   }
 
   // Beam line
-  ctx.strokeStyle = state.results ? '#475569' : '#94a3b8';
+  ctx.strokeStyle = state.results ? '#3f3f46' : '#a1a1aa';
   ctx.lineWidth = state.results ? 2 : 3;
   ctx.beginPath();
   ctx.moveTo(pad.l, beamY);
@@ -908,7 +923,7 @@ function drawBeam() {
   for (let i = 0; i < numNodes; i++) {
     const x = nodeX(i);
     if (i % Math.max(1, Math.floor(numNodes / 20)) === 0 || i === numNodes - 1) {
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = '#71717a';
       ctx.beginPath();
       ctx.arc(x, beamY, 2, 0, Math.PI * 2);
       ctx.fill();
@@ -938,13 +953,13 @@ function drawBeam() {
   }
 
   // Length label
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '11px system-ui';
+  ctx.fillStyle = '#a1a1aa';
+  ctx.font = "11px 'Inter', sans-serif";
   ctx.textAlign = 'center';
   ctx.fillText(`${state.beam.length} m`, pad.l + bw / 2, h - 10);
 
   // Dimension line
-  ctx.strokeStyle = '#475569';
+  ctx.strokeStyle = '#3f3f46';
   ctx.lineWidth = 1;
   const dimY = h - 22;
   ctx.beginPath();
@@ -961,8 +976,8 @@ function drawSupport(ctx, x, y, type) {
   const s = 14;
   ctx.lineWidth = 2;
   if (type === 'pin') {
-    ctx.strokeStyle = '#22c55e';
-    ctx.fillStyle = 'rgba(34,197,94,0.1)';
+    ctx.strokeStyle = '#4ade80';
+    ctx.fillStyle = 'rgba(74,222,128,0.1)';
     ctx.beginPath();
     ctx.moveTo(x, y);
     ctx.lineTo(x - s, y + s * 1.3);
@@ -976,8 +991,8 @@ function drawSupport(ctx, x, y, type) {
     ctx.lineTo(x + s + 4, y + s * 1.3 + 2);
     ctx.stroke();
   } else if (type === 'roller') {
-    ctx.strokeStyle = '#3b82f6';
-    ctx.fillStyle = 'rgba(59,130,246,0.1)';
+    ctx.strokeStyle = '#fbbf24';
+    ctx.fillStyle = 'rgba(251,191,36,0.1)';
     // Triangle
     ctx.beginPath();
     ctx.moveTo(x, y);
@@ -1016,8 +1031,8 @@ function drawSupport(ctx, x, y, type) {
 function drawPointLoad(ctx, x, y, value) {
   const dir = value < 0 ? 1 : -1; // negative = downward
   const len = 35;
-  ctx.strokeStyle = '#ef4444';
-  ctx.fillStyle = '#ef4444';
+  ctx.strokeStyle = '#f87171';
+  ctx.fillStyle = '#f87171';
   ctx.lineWidth = 2;
 
   const startY = y - dir * len;
@@ -1038,7 +1053,7 @@ function drawPointLoad(ctx, x, y, value) {
   ctx.fill();
 
   // Label
-  ctx.font = 'bold 11px system-ui';
+  ctx.font = "bold 11px 'JetBrains Mono', monospace";
   ctx.textAlign = 'center';
   ctx.fillText(`${Math.abs(value)} kN`, x, startY - dir * 6);
 }
@@ -1046,8 +1061,8 @@ function drawPointLoad(ctx, x, y, value) {
 function drawDistributedLoad(ctx, x1, x2, y, value) {
   const dir = value < 0 ? 1 : -1;
   const arrowLen = 22;
-  ctx.strokeStyle = '#a855f7';
-  ctx.fillStyle = '#a855f7';
+  ctx.strokeStyle = '#f59e0b';
+  ctx.fillStyle = '#f59e0b';
   ctx.lineWidth = 1.5;
 
   const topY = y - dir * arrowLen;
@@ -1081,15 +1096,15 @@ function drawDistributedLoad(ctx, x1, x2, y, value) {
   ctx.globalAlpha = 1;
 
   // Label
-  ctx.font = 'bold 11px system-ui';
+  ctx.font = "bold 11px 'JetBrains Mono', monospace";
   ctx.textAlign = 'center';
   ctx.fillText(`${Math.abs(value)} kN/m`, (x1 + x2) / 2, topY - dir * 8);
 }
 
 function drawMomentLoad(ctx, x, y, value) {
   const dir = value > 0 ? 1 : -1;
-  ctx.strokeStyle = '#06b6d4';
-  ctx.fillStyle = '#06b6d4';
+  ctx.strokeStyle = '#eab308';
+  ctx.fillStyle = '#eab308';
   ctx.lineWidth = 2;
 
   const r = 14;
@@ -1105,7 +1120,7 @@ function drawMomentLoad(ctx, x, y, value) {
   ctx.arc(ax, ay, 4, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.font = 'bold 11px system-ui';
+  ctx.font = "bold 11px 'JetBrains Mono', monospace";
   ctx.textAlign = 'center';
   ctx.fillText(`${Math.abs(value)} kN·m`, x, y - r - 8);
 }
@@ -1131,8 +1146,8 @@ function drawSectionPreview() {
   }
   const scale = Math.min((w - 40) / maxW, (h - 20) / maxH);
 
-  ctx.strokeStyle = '#3b82f6';
-  ctx.fillStyle = 'rgba(59,130,246,0.12)';
+  ctx.strokeStyle = '#f59e0b';
+  ctx.fillStyle = 'rgba(245,158,11,0.12)';
   ctx.lineWidth = 1.5;
 
   switch(type) {
@@ -1244,17 +1259,17 @@ function drawResults() {
     data = r.deflections.map(d => d * 1000); // m → mm
     label = 'Deflection';
     unit = 'mm';
-    color = '#3b82f6';
+    color = '#f59e0b';
   } else if (tab === 'moment') {
     data = r.moments.map(m => m / 1000); // N·m → kN·m
     label = 'Bending Moment';
     unit = 'kN·m';
-    color = '#f59e0b';
+    color = '#fbbf24';
   } else {
     data = r.shears.map(s => s / 1000); // N → kN
     label = 'Shear Force';
     unit = 'kN';
-    color = '#22c55e';
+    color = '#4ade80';
   }
 
   const pad = { l: 65, r: 30, t: 30, b: 35 };
@@ -1268,17 +1283,17 @@ function drawResults() {
   const yPos = (v) => pad.t + ph / 2 - (v / maxY) * (ph / 2);
 
   // Grid
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = '#18181b';
   ctx.lineWidth = 1;
   // Zero line
-  ctx.strokeStyle = '#334155';
+  ctx.strokeStyle = '#3f3f46';
   ctx.beginPath();
   ctx.moveTo(pad.l, yPos(0));
   ctx.lineTo(pad.l + pw, yPos(0));
   ctx.stroke();
 
   // Horizontal grid lines
-  ctx.strokeStyle = '#1e293b';
+  ctx.strokeStyle = '#18181b';
   const gridLines = 4;
   for (let i = -gridLines; i <= gridLines; i++) {
     if (i === 0) continue;
@@ -1290,8 +1305,8 @@ function drawResults() {
     ctx.lineTo(pad.l + pw, gy);
     ctx.stroke();
 
-    ctx.fillStyle = '#64748b';
-    ctx.font = '10px ' + 'system-ui';
+    ctx.fillStyle = '#71717a';
+    ctx.font = "10px 'JetBrains Mono', monospace";
     ctx.textAlign = 'right';
     ctx.fillText(v.toFixed(2), pad.l - 6, gy + 3);
   }
@@ -1337,16 +1352,16 @@ function drawResults() {
     ctx.arc(ex, ey, 4, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = '#f1f5f9';
-    ctx.font = 'bold 11px system-ui';
+    ctx.fillStyle = '#f4f4f5';
+    ctx.font = "bold 11px 'JetBrains Mono', monospace";
     ctx.textAlign = 'center';
     const labelY = extremeVal > 0 ? ey - 12 : ey + 16;
     ctx.fillText(`${extremeVal.toFixed(3)} ${unit}`, ex, labelY);
   }
 
   // X-axis labels
-  ctx.fillStyle = '#64748b';
-  ctx.font = '10px system-ui';
+  ctx.fillStyle = '#71717a';
+  ctx.font = "10px 'JetBrains Mono', monospace";
   ctx.textAlign = 'center';
   const numLabels = Math.min(6, data.length);
   for (let i = 0; i <= numLabels; i++) {
@@ -1356,8 +1371,8 @@ function drawResults() {
   }
 
   // Title
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '12px system-ui';
+  ctx.fillStyle = '#a1a1aa';
+  ctx.font = "12px 'Inter', sans-serif";
   ctx.textAlign = 'left';
   ctx.fillText(`${label} (${unit})`, pad.l, pad.t - 10);
 }
