@@ -1,0 +1,19 @@
+{
+  "name": "BeamFEA — 2D Finite Element Beam Analysis",
+  "short_name": "BeamFEA",
+  "description": "Progressive Web App for 2D beam deflection analysis using the finite element method. Supports H-beams, rectangles, circles, hollow sections, T-beams, and channels.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%230f172a'/><rect x='60' y='200' width='392' height='80' rx='8' fill='%233b82f6' opacity='.3'/><rect x='60' y='200' width='392' height='80' rx='8' stroke='%233b82f6' stroke-width='12' fill='none'/><path d='M100 280 L100 400 M150 280 L100 400 M50 400 L150 400' stroke='%2322c55e' stroke-width='12' stroke-linecap='round'/><circle cx='412' cy='390' r='24' stroke='%233b82f6' stroke-width='12' fill='none'/><line x1='370' y1='410' x2='454' y2='410' stroke='%233b82f6' stroke-width='12'/><path d='M256 100 L256 200' stroke='%23ef4444' stroke-width='12'/><path d='M230 160 L256 200 L282 160' stroke='%23ef4444' stroke-width='12' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

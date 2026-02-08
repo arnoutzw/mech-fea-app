@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeamFEA — 2D Finite Element Beam Analysis</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#0f172a;--bg-secondary:#1e293b;--bg-tertiary:#334155;
+  --accent:#3b82f6;--accent-hover:#2563eb;--accent-dim:#1e3a5f;
+  --danger:#ef4444;--success:#22c55e;--warning:#f59e0b;
+  --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;
+  --border:#475569;--border-light:#334155;
+  --radius:6px;--radius-lg:10px;
+  --font-mono:'SF Mono','Fira Code','Cascadia Code',monospace;
+}
+html,body{height:100%;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  background:var(--bg-primary);color:var(--text-primary);font-size:13px;overflow:hidden}
+#app{display:flex;flex-direction:column;height:100vh}
+header{display:flex;align-items:center;justify-content:space-between;
+  padding:8px 16px;background:var(--bg-secondary);border-bottom:1px solid var(--border-light);flex-shrink:0}
+.logo{display:flex;align-items:center;gap:10px}
+.logo svg{width:28px;height:28px}
+.logo h1{font-size:16px;font-weight:700;letter-spacing:-0.5px}
+.logo span{font-size:11px;color:var(--text-muted);margin-left:4px;font-weight:400}
+#solve-btn{background:var(--accent);color:#fff;border:none;padding:8px 24px;
+  border-radius:var(--radius);font-size:13px;font-weight:600;cursor:pointer;
+  display:flex;align-items:center;gap:6px;transition:background .15s}
+#solve-btn:hover{background:var(--accent-hover)}
+#solve-btn:active{transform:scale(0.97)}
+#solve-btn svg{width:16px;height:16px}
+main{display:flex;flex:1;overflow:hidden}
+#sidebar{width:280px;flex-shrink:0;background:var(--bg-secondary);border-right:1px solid var(--border-light);
+  overflow-y:auto;overflow-x:hidden}
+#sidebar::-webkit-scrollbar{width:5px}
+#sidebar::-webkit-scrollbar-track{background:transparent}
+#sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.panel{border-bottom:1px solid var(--border-light)}
+.panel-header{display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;cursor:pointer;user-select:none;transition:background .1s}
+.panel-header:hover{background:rgba(255,255,255,.03)}
+.panel-header h3{font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--text-secondary);font-weight:600}
+.panel-header .chevron{transition:transform .2s;color:var(--text-muted);font-size:10px}
+.panel.collapsed .panel-body{display:none}
+.panel.collapsed .chevron{transform:rotate(-90deg)}
+.panel-body{padding:8px 14px 14px}
+.form-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.form-row label{flex:0 0 70px;font-size:12px;color:var(--text-secondary)}
+.form-row input,.form-row select{flex:1;background:var(--bg-primary);border:1px solid var(--border-light);
+  color:var(--text-primary);padding:5px 8px;border-radius:var(--radius);font-size:12px;
+  font-family:var(--font-mono);outline:none;transition:border-color .15s}
+.form-row input:focus,.form-row select:focus{border-color:var(--accent)}
+.form-row .unit{flex:0 0 30px;font-size:11px;color:var(--text-muted);text-align:right}
+.computed{background:var(--bg-primary);border-radius:var(--radius);padding:8px 10px;margin-top:8px;
+  font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)}
+.computed strong{color:var(--accent)}
+#section-preview{width:100%;height:110px;border-radius:var(--radius);display:block;margin-top:8px}
+.item-list{max-height:120px;overflow-y:auto;margin-bottom:8px}
+.item-list::-webkit-scrollbar{width:4px}
+.item-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.list-item{display:flex;align-items:center;justify-content:space-between;
+  padding:5px 8px;background:var(--bg-primary);border-radius:var(--radius);margin-bottom:4px;font-size:12px}
+.list-item .info{font-family:var(--font-mono);color:var(--text-secondary)}
+.list-item .tag{font-size:10px;padding:2px 6px;border-radius:3px;font-weight:600;text-transform:uppercase}
+.tag-pin{background:#22c55e22;color:#22c55e}.tag-fixed{background:#f59e0b22;color:#f59e0b}
+.tag-roller{background:#3b82f622;color:#3b82f6}
+.tag-point{background:#ef444422;color:#ef4444}.tag-distributed{background:#a855f722;color:#a855f7}
+.tag-moment{background:#06b6d422;color:#06b6d4}
+.remove-btn{background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:14px;
+  padding:2px 4px;border-radius:3px;line-height:1;transition:all .1s}
+.remove-btn:hover{color:var(--danger);background:rgba(239,68,68,.1)}
+.add-row{display:flex;gap:4px;flex-wrap:wrap}
+.add-row select,.add-row input{background:var(--bg-primary);border:1px solid var(--border-light);
+  color:var(--text-primary);padding:4px 6px;border-radius:var(--radius);font-size:11px;
+  font-family:var(--font-mono);outline:none;min-width:0}
+.add-row input{width:60px}
+.add-btn{background:var(--accent-dim);color:var(--accent);border:none;padding:4px 10px;
+  border-radius:var(--radius);font-size:11px;font-weight:600;cursor:pointer;transition:background .15s;white-space:nowrap}
+.add-btn:hover{background:var(--accent);color:#fff}
+#workspace{flex:1;display:flex;flex-direction:column;overflow:hidden;padding:10px;gap:10px}
+#beam-view{flex:0 0 200px;background:var(--bg-secondary);border-radius:var(--radius-lg);
+  border:1px solid var(--border-light);position:relative;overflow:hidden}
+#beam-canvas{width:100%;height:100%;display:block}
+#results-view{flex:1;background:var(--bg-secondary);border-radius:var(--radius-lg);
+  border:1px solid var(--border-light);display:flex;flex-direction:column;overflow:hidden;min-height:180px}
+#results-tabs{display:flex;gap:2px;padding:8px 10px 0;flex-shrink:0}
+.tab{background:none;border:none;color:var(--text-muted);padding:6px 14px;font-size:12px;
+  font-weight:500;cursor:pointer;border-radius:var(--radius) var(--radius) 0 0;transition:all .15s}
+.tab:hover{color:var(--text-secondary);background:rgba(255,255,255,.03)}
+.tab.active{color:var(--accent);background:var(--bg-primary);font-weight:600}
+#results-canvas-wrap{flex:1;position:relative;overflow:hidden}
+#results-canvas{width:100%;height:100%;display:block}
+#results-summary{display:flex;gap:12px;padding:8px 12px;border-top:1px solid var(--border-light);
+  flex-shrink:0;flex-wrap:wrap}
+.stat{display:flex;flex-direction:column;gap:2px}
+.stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
+.stat-value{font-family:var(--font-mono);font-size:13px;font-weight:600}
+.stat-value.highlight{color:var(--accent)}
+#no-results{display:flex;align-items:center;justify-content:center;flex:1;
+  color:var(--text-muted);font-size:13px;flex-direction:column;gap:6px}
+#no-results svg{width:32px;height:32px;opacity:.3}
+.error-msg{color:var(--danger);font-size:12px;padding:8px;background:rgba(239,68,68,.08);
+  border-radius:var(--radius);margin-top:8px;border:1px solid rgba(239,68,68,.2)}
+@media(max-width:800px){
+  main{flex-direction:column}
+  #sidebar{width:100%;max-height:40vh;border-right:none;border-bottom:1px solid var(--border-light)}
+  #beam-view{flex:0 0 160px}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="2" y="11" width="24" height="6" rx="1" fill="#3b82f6" opacity=".3"/>
+        <rect x="2" y="11" width="24" height="6" rx="1" stroke="#3b82f6" stroke-width="1.5"/>
+        <path d="M4 17 L4 24 M8 17 L4 24 M0 24 L8 24" stroke="#22c55e" stroke-width="1.5" stroke-linecap="round"/>
+        <circle cx="24" cy="23" r="2.5" stroke="#3b82f6" stroke-width="1.5"/>
+        <line x1="20" y1="24.5" x2="28" y2="24.5" stroke="#3b82f6" stroke-width="1.5"/>
+        <path d="M14 5 L14 11" stroke="#ef4444" stroke-width="1.5"/>
+        <path d="M11 8 L14 11 L17 8" stroke="#ef4444" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>BeamFEA <span>2D Analysis</span></h1>
+    </div>
+    <button id="solve-btn" onclick="solve()">
+      <svg viewBox="0 0 16 16" fill="none"><path d="M4 2 L13 8 L4 14Z" fill="currentColor"/></svg>
+      Analyze
+    </button>
+  </header>
+
+  <main>
+    <aside id="sidebar">
+      <!-- Beam Setup -->
+      <div class="panel" id="panel-beam">
+        <div class="panel-header" onclick="togglePanel('panel-beam')">
+          <h3>Beam Setup</h3><span class="chevron">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row"><label>Length</label>
+            <input type="number" id="beam-length" value="5" min="0.1" step="0.1" onchange="updateState()">
+            <span class="unit">m</span></div>
+          <div class="form-row"><label>Elements</label>
+            <input type="number" id="beam-elements" value="20" min="2" max="200" step="1" onchange="updateState()">
+            <span class="unit">#</span></div>
+        </div>
+      </div>
+
+      <!-- Material -->
+      <div class="panel" id="panel-material">
+        <div class="panel-header" onclick="togglePanel('panel-material')">
+          <h3>Material</h3><span class="chevron">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row"><label>Preset</label>
+            <select id="mat-preset" onchange="setMaterial()">
+              <option value="steel">Steel</option>
+              <option value="aluminum">Aluminum</option>
+              <option value="concrete">Concrete</option>
+              <option value="timber">Timber</option>
+              <option value="custom">Custom</option>
+            </select></div>
+          <div class="form-row"><label>E</label>
+            <input type="number" id="mat-E" value="200" min="0.001" step="1" onchange="updateState()">
+            <span class="unit">GPa</span></div>
+        </div>
+      </div>
+
+      <!-- Cross Section -->
+      <div class="panel" id="panel-section">
+        <div class="panel-header" onclick="togglePanel('panel-section')">
+          <h3>Cross Section</h3><span class="chevron">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="form-row"><label>Type</label>
+            <select id="sec-type" onchange="changeSectionType()">
+              <option value="hbeam">I / H-Beam</option>
+              <option value="rectangle">Rectangle</option>
+              <option value="circle">Circle</option>
+              <option value="hollowRect">Hollow Rect</option>
+              <option value="tbeam">T-Beam</option>
+              <option value="channel">Channel</option>
+            </select></div>
+          <div id="sec-params"></div>
+          <canvas id="section-preview"></canvas>
+          <div class="computed" id="sec-computed"></div>
+        </div>
+      </div>
+
+      <!-- Supports -->
+      <div class="panel" id="panel-supports">
+        <div class="panel-header" onclick="togglePanel('panel-supports')">
+          <h3>Supports</h3><span class="chevron">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="item-list" id="support-list"></div>
+          <div class="add-row">
+            <select id="sup-node"></select>
+            <select id="sup-type">
+              <option value="pin">Pin</option>
+              <option value="roller">Roller</option>
+              <option value="fixed">Fixed</option>
+            </select>
+            <button class="add-btn" onclick="addSupport()">+ Add</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loads -->
+      <div class="panel" id="panel-loads">
+        <div class="panel-header" onclick="togglePanel('panel-loads')">
+          <h3>Loads</h3><span class="chevron">▼</span>
+        </div>
+        <div class="panel-body">
+          <div class="item-list" id="load-list"></div>
+          <div class="add-row">
+            <select id="load-type" onchange="updateLoadForm()">
+              <option value="point">Point</option>
+              <option value="distributed">Distributed</option>
+              <option value="moment">Moment</option>
+            </select>
+            <span id="load-fields"></span>
+            <button class="add-btn" onclick="addLoad()">+ Add</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <div id="workspace">
+      <div id="beam-view">
+        <canvas id="beam-canvas"></canvas>
+      </div>
+      <div id="results-view">
+        <div id="results-tabs">
+          <button class="tab active" data-tab="deflection" onclick="switchTab('deflection')">Deflection</button>
+          <button class="tab" data-tab="moment" onclick="switchTab('moment')">Bending Moment</button>
+          <button class="tab" data-tab="shear" onclick="switchTab('shear')">Shear Force</button>
+        </div>
+        <div id="results-canvas-wrap">
+          <canvas id="results-canvas"></canvas>
+          <div id="no-results">
+            <svg viewBox="0 0 24 24" fill="none"><path d="M3 12h4l3-9 4 18 3-9h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <span>Click <b>Analyze</b> to run FEA</span>
+          </div>
+        </div>
+        <div id="results-summary"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+const state = {
+  beam: { length: 5, numElements: 20 },
+  material: { name: 'Steel', E: 200 },
+  section: {
+    type: 'hbeam',
+    params: { H: 300, B: 150, tf: 10, tw: 7 },
+    I: 0, A: 0, yMax: 0
+  },
+  supports: [
+    { node: 0, type: 'pin' },
+    { node: 20, type: 'roller' }
+  ],
+  loads: [
+    { type: 'point', node: 10, value: -50, unit: 'kN' }
+  ],
+  results: null,
+  activeTab: 'deflection'
+};
+
+const MATERIALS = {
+  steel:    { E: 200 },
+  aluminum: { E: 69 },
+  concrete: { E: 30 },
+  timber:   { E: 12 },
+};
+
+const SECTION_DEFS = {
+  hbeam:      { label:'I / H-Beam', params:['H','B','tf','tw'], defaults:{H:300,B:150,tf:10,tw:7},
+                labels:{H:'Height',B:'Fl. Width',tf:'Fl. Thick',tw:'Web Thick'} },
+  rectangle:  { label:'Rectangle', params:['b','h'], defaults:{b:100,h:200},
+                labels:{b:'Width',h:'Height'} },
+  circle:     { label:'Circle', params:['d'], defaults:{d:200},
+                labels:{d:'Diameter'} },
+  hollowRect: { label:'Hollow Rect', params:['B','H','t'], defaults:{B:150,H:250,t:10},
+                labels:{B:'Width',H:'Height',t:'Wall Thick'} },
+  tbeam:      { label:'T-Beam', params:['bf','tf','hw','tw'], defaults:{bf:200,tf:12,hw:250,tw:8},
+                labels:{bf:'Fl. Width',tf:'Fl. Thick',hw:'Web Height',tw:'Web Thick'} },
+  channel:    { label:'Channel', params:['H','B','tf','tw'], defaults:{H:250,B:80,tf:10,tw:7},
+                labels:{H:'Height',B:'Fl. Width',tf:'Fl. Thick',tw:'Web Thick'} },
+};
+
+// ============================================================
+// CROSS-SECTION CALCULATOR
+// ============================================================
+function calcSectionProps(type, p) {
+  let I, A, yMax;
+  switch(type) {
+    case 'rectangle': {
+      const { b, h } = p;
+      A = b * h;
+      I = b * h * h * h / 12;
+      yMax = h / 2;
+      break;
+    }
+    case 'circle': {
+      const r = p.d / 2;
+      A = Math.PI * r * r;
+      I = Math.PI * r * r * r * r / 4;
+      yMax = r;
+      break;
+    }
+    case 'hbeam': {
+      const { H, B, tf, tw } = p;
+      const hWeb = H - 2 * tf;
+      A = 2 * B * tf + hWeb * tw;
+      I = (B * H * H * H - (B - tw) * hWeb * hWeb * hWeb) / 12;
+      yMax = H / 2;
+      break;
+    }
+    case 'hollowRect': {
+      const { B, H, t } = p;
+      const bi = B - 2 * t, hi = H - 2 * t;
+      A = B * H - bi * hi;
+      I = (B * H * H * H - bi * hi * hi * hi) / 12;
+      yMax = H / 2;
+      break;
+    }
+    case 'tbeam': {
+      const { bf, tf, hw, tw } = p;
+      const Af = bf * tf, Aw = hw * tw;
+      A = Af + Aw;
+      const yf = hw + tf / 2, yw = hw / 2;
+      const yc = (Af * yf + Aw * yw) / A;
+      const If = bf * tf * tf * tf / 12 + Af * (yf - yc) * (yf - yc);
+      const Iw = tw * hw * hw * hw / 12 + Aw * (yw - yc) * (yw - yc);
+      I = If + Iw;
+      yMax = Math.max(yc, hw + tf - yc);
+      break;
+    }
+    case 'channel': {
+      const { H, B, tf, tw } = p;
+      const hWeb = H - 2 * tf;
+      A = 2 * B * tf + hWeb * tw;
+      I = (tw * hWeb * hWeb * hWeb / 12) +
+          2 * (B * tf * tf * tf / 12 + B * tf * ((H - tf) / 2) * ((H - tf) / 2));
+      yMax = H / 2;
+      break;
+    }
+  }
+  return { I, A, yMax }; // all in mm units (mm⁴, mm², mm)
+}
+
+// ============================================================
+// FEA ENGINE
+// ============================================================
+function createStiffnessMatrix(EI, L) {
+  const c = EI / (L * L * L);
+  return [
+    [ 12*c,   6*L*c,  -12*c,   6*L*c ],
+    [ 6*L*c,  4*L*L*c, -6*L*c, 2*L*L*c],
+    [-12*c,  -6*L*c,   12*c,  -6*L*c  ],
+    [ 6*L*c,  2*L*L*c, -6*L*c, 4*L*L*c]
+  ];
+}
+
+function assembleGlobalMatrix(numNodes, numElements, EI, elementLength) {
+  const n = numNodes * 2;
+  const K = Array.from({length:n}, () => new Float64Array(n));
+  const ke = createStiffnessMatrix(EI, elementLength);
+  for (let e = 0; e < numElements; e++) {
+    const dofs = [e*2, e*2+1, e*2+2, e*2+3];
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++)
+        K[dofs[i]][dofs[j]] += ke[i][j];
+  }
+  return K;
+}
+
+function buildForceVector(numNodes, loads, elementLength, numElements) {
+  const n = numNodes * 2;
+  const F = new Float64Array(n);
+  for (const load of loads) {
+    if (load.type === 'point') {
+      const nodeIdx = load.node;
+      F[nodeIdx * 2] += load.value * 1000; // kN → N
+    } else if (load.type === 'moment') {
+      const nodeIdx = load.node;
+      F[nodeIdx * 2 + 1] += load.value * 1000; // kN·m → N·m
+    } else if (load.type === 'distributed') {
+      const w = load.value * 1000; // kN/m → N/m
+      const startNode = load.startNode;
+      const endNode = load.endNode;
+      for (let e = startNode; e < endNode; e++) {
+        const L = elementLength;
+        // Equivalent nodal loads for UDL on beam element
+        F[e*2]       += w * L / 2;
+        F[e*2 + 1]   += w * L * L / 12;
+        F[e*2 + 2]   += w * L / 2;
+        F[e*2 + 3]   -= w * L * L / 12;
+      }
+    }
+  }
+  return F;
+}
+
+function applyBCs(K, F, supports) {
+  const n = F.length;
+  const fixedDofs = new Set();
+  for (const sup of supports) {
+    if (sup.type === 'pin' || sup.type === 'roller') {
+      fixedDofs.add(sup.node * 2); // fix vertical displacement
+    }
+    if (sup.type === 'fixed') {
+      fixedDofs.add(sup.node * 2);     // fix vertical displacement
+      fixedDofs.add(sup.node * 2 + 1); // fix rotation
+    }
+  }
+  // Elimination method: zero row/col, set diagonal to 1
+  const Km = K.map(r => Float64Array.from(r));
+  const Fm = Float64Array.from(F);
+  for (const d of fixedDofs) {
+    for (let i = 0; i < n; i++) { Km[d][i] = 0; Km[i][d] = 0; }
+    Km[d][d] = 1;
+    Fm[d] = 0;
+  }
+  return { K: Km, F: Fm, fixedDofs };
+}
+
+function solveSystem(K, F) {
+  const n = F.length;
+  const A = K.map((row, i) => {
+    const r = new Float64Array(n + 1);
+    for (let j = 0; j < n; j++) r[j] = row[j];
+    r[n] = F[i];
+    return r;
+  });
+
+  // Gaussian elimination with partial pivoting
+  for (let col = 0; col < n; col++) {
+    let maxVal = Math.abs(A[col][col]);
+    let maxRow = col;
+    for (let row = col + 1; row < n; row++) {
+      const v = Math.abs(A[row][col]);
+      if (v > maxVal) { maxVal = v; maxRow = row; }
+    }
+    if (maxVal < 1e-20) continue;
+    [A[col], A[maxRow]] = [A[maxRow], A[col]];
+    const pivot = A[col][col];
+    for (let row = col + 1; row < n; row++) {
+      const factor = A[row][col] / pivot;
+      for (let j = col; j <= n; j++) A[row][j] -= factor * A[col][j];
+    }
+  }
+
+  // Back substitution
+  const x = new Float64Array(n);
+  for (let row = n - 1; row >= 0; row--) {
+    let sum = A[row][n];
+    for (let col = row + 1; col < n; col++) sum -= A[row][col] * x[col];
+    x[row] = Math.abs(A[row][row]) > 1e-30 ? sum / A[row][row] : 0;
+  }
+  return x;
+}
+
+function postProcess(displacements, numElements, elementLength, EI, originalK, originalF) {
+  const numNodes = numElements + 1;
+  // Reactions
+  const reactions = new Float64Array(numNodes * 2);
+  for (let i = 0; i < numNodes * 2; i++) {
+    let sum = 0;
+    for (let j = 0; j < numNodes * 2; j++) sum += originalK[i][j] * displacements[j];
+    reactions[i] = sum - originalF[i];
+  }
+
+  // Internal forces at each node
+  const moments = new Float64Array(numNodes);
+  const shears = new Float64Array(numNodes);
+
+  for (let e = 0; e < numElements; e++) {
+    const L = elementLength;
+    const c = EI / (L * L * L);
+    const ke = createStiffnessMatrix(EI, L);
+    const d = [displacements[e*2], displacements[e*2+1], displacements[e*2+2], displacements[e*2+3]];
+
+    // Local forces: f = ke * d
+    const f = [0,0,0,0];
+    for (let i = 0; i < 4; i++)
+      for (let j = 0; j < 4; j++)
+        f[i] += ke[i][j] * d[j];
+
+    // Shear at left: V = f[0], Moment at left: M = f[1]
+    // Shear at right: V = -f[2], Moment at right: M = -f[3]
+    if (e === 0) {
+      shears[0] = -f[0];  // sign convention: positive shear upward on left face
+      moments[0] = f[1];
+    }
+    shears[e + 1] = f[2];
+    moments[e + 1] = -f[3];
+  }
+
+  return { reactions, moments, shears };
+}
+
+function runFEA() {
+  const { beam, material, section, supports, loads } = state;
+  const numElements = beam.numElements;
+  const numNodes = numElements + 1;
+  const L = beam.length;
+  const elemLen = L / numElements;
+
+  // Convert units
+  const E = material.E * 1e9;           // GPa → Pa
+  const I_m4 = section.I * 1e-12;       // mm⁴ → m⁴
+  const EI = E * I_m4;                   // N·m²
+
+  if (EI <= 0) throw new Error('EI must be positive. Check section dimensions.');
+  if (supports.length < 1) throw new Error('At least one support is required.');
+
+  // Check for sufficient constraints
+  let numFixed = 0;
+  for (const s of supports) {
+    if (s.type === 'fixed') numFixed += 2;
+    else numFixed += 1;
+  }
+  if (numFixed < 2) throw new Error('Structure is unstable. Add more supports (need at least 2 constrained DOFs).');
+
+  const K = assembleGlobalMatrix(numNodes, numElements, EI, elemLen);
+  const F = buildForceVector(numNodes, loads, elemLen, numElements);
+
+  const originalK = K.map(r => Float64Array.from(r));
+  const originalF = Float64Array.from(F);
+
+  const { K: Km, F: Fm } = applyBCs(K, F, supports);
+  const u = solveSystem(Km, Fm);
+
+  const pp = postProcess(u, numElements, elemLen, EI, originalK, originalF);
+
+  // Extract deflections and rotations
+  const deflections = [];
+  const rotations = [];
+  for (let i = 0; i < numNodes; i++) {
+    deflections.push(u[i * 2]);
+    rotations.push(u[i * 2 + 1]);
+  }
+
+  return {
+    deflections, rotations,
+    moments: Array.from(pp.moments),
+    shears: Array.from(pp.shears),
+    reactions: pp.reactions,
+    EI, elemLen, numNodes, numElements
+  };
+}
+
+// ============================================================
+// UI CONTROLLERS
+// ============================================================
+function togglePanel(id) {
+  document.getElementById(id).classList.toggle('collapsed');
+}
+
+function setMaterial() {
+  const preset = document.getElementById('mat-preset').value;
+  if (MATERIALS[preset]) {
+    document.getElementById('mat-E').value = MATERIALS[preset].E;
+  }
+  updateState();
+}
+
+function changeSectionType() {
+  state.section.type = document.getElementById('sec-type').value;
+  const def = SECTION_DEFS[state.section.type];
+  state.section.params = { ...def.defaults };
+  buildSectionForm();
+  updateState();
+}
+
+function buildSectionForm() {
+  const type = state.section.type;
+  const def = SECTION_DEFS[type];
+  const container = document.getElementById('sec-params');
+  container.innerHTML = '';
+  for (const p of def.params) {
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    row.innerHTML = `<label>${def.labels[p]}</label>
+      <input type="number" data-param="${p}" value="${state.section.params[p]}" min="0.1" step="0.5"
+        onchange="updateSectionParam(this)">
+      <span class="unit">mm</span>`;
+    container.appendChild(row);
+  }
+}
+
+function updateSectionParam(el) {
+  state.section.params[el.dataset.param] = parseFloat(el.value) || 0;
+  updateState();
+}
+
+function updateNodeDropdowns() {
+  const numNodes = state.beam.numElements + 1;
+  const supSel = document.getElementById('sup-node');
+  const current = supSel.value;
+  supSel.innerHTML = '';
+  for (let i = 0; i < numNodes; i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    const pos = (i * state.beam.length / state.beam.numElements).toFixed(2);
+    opt.textContent = `N${i} (${pos}m)`;
+    supSel.appendChild(opt);
+  }
+  if (current && parseInt(current) < numNodes) supSel.value = current;
+  updateLoadForm();
+}
+
+function updateLoadForm() {
+  const type = document.getElementById('load-type').value;
+  const container = document.getElementById('load-fields');
+  const numNodes = state.beam.numElements + 1;
+
+  if (type === 'point') {
+    let opts = '';
+    for (let i = 0; i < numNodes; i++) {
+      const pos = (i * state.beam.length / state.beam.numElements).toFixed(2);
+      opts += `<option value="${i}">N${i} (${pos}m)</option>`;
+    }
+    container.innerHTML = `<select id="load-node">${opts}</select>
+      <input id="load-val" type="number" value="-50" step="1" placeholder="kN">`;
+  } else if (type === 'distributed') {
+    let opts = '';
+    for (let i = 0; i < numNodes; i++) {
+      const pos = (i * state.beam.length / state.beam.numElements).toFixed(2);
+      opts += `<option value="${i}">N${i} (${pos}m)</option>`;
+    }
+    container.innerHTML = `<select id="load-start">${opts}</select>
+      <select id="load-end">${opts}</select>
+      <input id="load-val" type="number" value="-20" step="1" placeholder="kN/m">`;
+    document.getElementById('load-end').value = state.beam.numElements;
+  } else if (type === 'moment') {
+    let opts = '';
+    for (let i = 0; i < numNodes; i++) {
+      const pos = (i * state.beam.length / state.beam.numElements).toFixed(2);
+      opts += `<option value="${i}">N${i} (${pos}m)</option>`;
+    }
+    container.innerHTML = `<select id="load-node">${opts}</select>
+      <input id="load-val" type="number" value="10" step="1" placeholder="kN·m">`;
+  }
+}
+
+function addSupport() {
+  const node = parseInt(document.getElementById('sup-node').value);
+  const type = document.getElementById('sup-type').value;
+  // Check if support already exists at this node
+  if (state.supports.find(s => s.node === node)) {
+    state.supports = state.supports.filter(s => s.node !== node);
+  }
+  state.supports.push({ node, type });
+  renderSupportList();
+  drawBeam();
+}
+
+function removeSupport(idx) {
+  state.supports.splice(idx, 1);
+  renderSupportList();
+  drawBeam();
+}
+
+function renderSupportList() {
+  const list = document.getElementById('support-list');
+  list.innerHTML = state.supports.map((s, i) => {
+    const pos = (s.node * state.beam.length / state.beam.numElements).toFixed(2);
+    return `<div class="list-item">
+      <span class="tag tag-${s.type}">${s.type}</span>
+      <span class="info">Node ${s.node} (${pos}m)</span>
+      <button class="remove-btn" onclick="removeSupport(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addLoad() {
+  const type = document.getElementById('load-type').value;
+  const val = parseFloat(document.getElementById('load-val').value) || 0;
+  if (type === 'point' || type === 'moment') {
+    const node = parseInt(document.getElementById('load-node').value);
+    state.loads.push({ type, node, value: val });
+  } else if (type === 'distributed') {
+    const startNode = parseInt(document.getElementById('load-start').value);
+    const endNode = parseInt(document.getElementById('load-end').value);
+    if (endNode <= startNode) { alert('End node must be after start node'); return; }
+    state.loads.push({ type, startNode, endNode, value: val });
+  }
+  renderLoadList();
+  drawBeam();
+}
+
+function removeLoad(idx) {
+  state.loads.splice(idx, 1);
+  renderLoadList();
+  drawBeam();
+}
+
+function renderLoadList() {
+  const list = document.getElementById('load-list');
+  const eLen = state.beam.length / state.beam.numElements;
+  list.innerHTML = state.loads.map((l, i) => {
+    let info = '';
+    if (l.type === 'point') {
+      info = `${l.value} kN @ N${l.node} (${(l.node*eLen).toFixed(2)}m)`;
+    } else if (l.type === 'distributed') {
+      info = `${l.value} kN/m [N${l.startNode}–N${l.endNode}]`;
+    } else if (l.type === 'moment') {
+      info = `${l.value} kN·m @ N${l.node}`;
+    }
+    return `<div class="list-item">
+      <span class="tag tag-${l.type}">${l.type[0].toUpperCase()}</span>
+      <span class="info">${info}</span>
+      <button class="remove-btn" onclick="removeLoad(${i})">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  if (state.results) drawResults();
+}
+
+function updateState() {
+  state.beam.length = parseFloat(document.getElementById('beam-length').value) || 5;
+  state.beam.numElements = Math.max(2, Math.min(200, parseInt(document.getElementById('beam-elements').value) || 20));
+  state.material.E = parseFloat(document.getElementById('mat-E').value) || 200;
+
+  // Update cross-section
+  const props = calcSectionProps(state.section.type, state.section.params);
+  state.section.I = props.I;
+  state.section.A = props.A;
+  state.section.yMax = props.yMax;
+
+  // Validate supports (clamp node indices)
+  const maxNode = state.beam.numElements;
+  state.supports.forEach(s => { s.node = Math.min(s.node, maxNode); });
+  state.loads.forEach(l => {
+    if (l.node !== undefined) l.node = Math.min(l.node, maxNode);
+    if (l.startNode !== undefined) l.startNode = Math.min(l.startNode, maxNode);
+    if (l.endNode !== undefined) l.endNode = Math.min(l.endNode, maxNode);
+  });
+
+  // Display computed properties
+  const comp = document.getElementById('sec-computed');
+  const I_cm4 = (props.I / 1e4).toFixed(1);
+  const A_cm2 = (props.A / 1e2).toFixed(2);
+  comp.innerHTML = `I = <strong>${I_cm4} cm⁴</strong> &nbsp;|&nbsp; A = <strong>${A_cm2} cm²</strong>`;
+
+  updateNodeDropdowns();
+  renderSupportList();
+  renderLoadList();
+  drawSectionPreview();
+  drawBeam();
+
+  if (state.results) state.results = null;
+  document.getElementById('no-results').style.display = 'flex';
+  document.getElementById('results-summary').innerHTML = '';
+}
+
+function solve() {
+  const btn = document.getElementById('solve-btn');
+  btn.textContent = 'Solving...';
+  btn.disabled = true;
+
+  // Clear previous errors
+  document.querySelectorAll('.error-msg').forEach(e => e.remove());
+
+  setTimeout(() => {
+    try {
+      state.results = runFEA();
+      document.getElementById('no-results').style.display = 'none';
+      drawBeam();
+      drawResults();
+      showSummary();
+    } catch(err) {
+      const errDiv = document.createElement('div');
+      errDiv.className = 'error-msg';
+      errDiv.textContent = err.message;
+      document.getElementById('panel-beam').querySelector('.panel-body').appendChild(errDiv);
+    }
+    btn.innerHTML = '<svg viewBox="0 0 16 16" fill="none"><path d="M4 2 L13 8 L4 14Z" fill="currentColor"/></svg> Analyze';
+    btn.disabled = false;
+  }, 30);
+}
+
+function showSummary() {
+  const r = state.results;
+  if (!r) return;
+  const maxDefl = Math.max(...r.deflections.map(Math.abs)) * 1000; // m → mm
+  const maxMoment = Math.max(...r.moments.map(Math.abs)) / 1000;  // N·m → kN·m
+  const maxShear = Math.max(...r.shears.map(Math.abs)) / 1000;    // N → kN
+
+  // Compute max bending stress
+  const sigma = (maxMoment * 1000 * state.section.yMax * 1e-3) / (state.section.I * 1e-12); // Pa
+  const sigma_MPa = sigma / 1e6;
+
+  // Span/deflection ratio
+  const spanRatio = maxDefl > 0 ? Math.round(state.beam.length * 1000 / maxDefl) : '∞';
+
+  document.getElementById('results-summary').innerHTML = `
+    <div class="stat"><span class="stat-label">Max Deflection</span>
+      <span class="stat-value highlight">${maxDefl.toFixed(3)} mm</span></div>
+    <div class="stat"><span class="stat-label">Span / δ</span>
+      <span class="stat-value">L/${spanRatio}</span></div>
+    <div class="stat"><span class="stat-label">Max Moment</span>
+      <span class="stat-value">${maxMoment.toFixed(2)} kN·m</span></div>
+    <div class="stat"><span class="stat-label">Max Shear</span>
+      <span class="stat-value">${maxShear.toFixed(2)} kN</span></div>
+    <div class="stat"><span class="stat-label">Max Bending Stress</span>
+      <span class="stat-value">${sigma_MPa.toFixed(1)} MPa</span></div>
+  `;
+}
+
+// ============================================================
+// CANVAS RENDERERS
+// ============================================================
+function dpr() { return window.devicePixelRatio || 1; }
+
+function setupCanvas(canvas) {
+  const rect = canvas.parentElement.getBoundingClientRect();
+  const r = dpr();
+  canvas.width = rect.width * r;
+  canvas.height = rect.height * r;
+  canvas.style.width = rect.width + 'px';
+  canvas.style.height = rect.height + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(r, r);
+  return { ctx, w: rect.width, h: rect.height };
+}
+
+function drawBeam() {
+  const canvas = document.getElementById('beam-canvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  const pad = { l: 50, r: 50, t: 50, b: 60 };
+  const bw = w - pad.l - pad.r;
+  const bh = h - pad.t - pad.b;
+  const beamY = pad.t + bh * 0.5;
+
+  const numNodes = state.beam.numElements + 1;
+  const nodeX = (i) => pad.l + (i / (numNodes - 1)) * bw;
+
+  // Grid / reference line
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath();
+  ctx.moveTo(pad.l, beamY);
+  ctx.lineTo(pad.l + bw, beamY);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Draw deflected shape if results exist
+  if (state.results) {
+    const r = state.results;
+    const maxD = Math.max(...r.deflections.map(Math.abs));
+    const scale = maxD > 0 ? (bh * 0.35) / maxD : 1;
+
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    for (let i = 0; i < numNodes; i++) {
+      const x = nodeX(i);
+      const y = beamY - r.deflections[i] * scale;
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // Filled area
+    ctx.globalAlpha = 0.08;
+    ctx.fillStyle = '#3b82f6';
+    ctx.beginPath();
+    ctx.moveTo(nodeX(0), beamY);
+    for (let i = 0; i < numNodes; i++) {
+      ctx.lineTo(nodeX(i), beamY - r.deflections[i] * scale);
+    }
+    ctx.lineTo(nodeX(numNodes - 1), beamY);
+    ctx.closePath();
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+
+  // Beam line
+  ctx.strokeStyle = state.results ? '#475569' : '#94a3b8';
+  ctx.lineWidth = state.results ? 2 : 3;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, beamY);
+  ctx.lineTo(pad.l + bw, beamY);
+  ctx.stroke();
+
+  // Node dots
+  for (let i = 0; i < numNodes; i++) {
+    const x = nodeX(i);
+    if (i % Math.max(1, Math.floor(numNodes / 20)) === 0 || i === numNodes - 1) {
+      ctx.fillStyle = '#64748b';
+      ctx.beginPath();
+      ctx.arc(x, beamY, 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Supports
+  for (const sup of state.supports) {
+    const x = nodeX(sup.node);
+    drawSupport(ctx, x, beamY, sup.type);
+  }
+
+  // Loads
+  const eLen = state.beam.length / state.beam.numElements;
+  for (const load of state.loads) {
+    if (load.type === 'point') {
+      const x = nodeX(load.node);
+      drawPointLoad(ctx, x, beamY, load.value);
+    } else if (load.type === 'distributed') {
+      const x1 = nodeX(load.startNode);
+      const x2 = nodeX(load.endNode);
+      drawDistributedLoad(ctx, x1, x2, beamY, load.value);
+    } else if (load.type === 'moment') {
+      const x = nodeX(load.node);
+      drawMomentLoad(ctx, x, beamY, load.value);
+    }
+  }
+
+  // Length label
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${state.beam.length} m`, pad.l + bw / 2, h - 10);
+
+  // Dimension line
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1;
+  const dimY = h - 22;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, dimY);
+  ctx.lineTo(pad.l + bw, dimY);
+  ctx.moveTo(pad.l, dimY - 4);
+  ctx.lineTo(pad.l, dimY + 4);
+  ctx.moveTo(pad.l + bw, dimY - 4);
+  ctx.lineTo(pad.l + bw, dimY + 4);
+  ctx.stroke();
+}
+
+function drawSupport(ctx, x, y, type) {
+  const s = 14;
+  ctx.lineWidth = 2;
+  if (type === 'pin') {
+    ctx.strokeStyle = '#22c55e';
+    ctx.fillStyle = 'rgba(34,197,94,0.1)';
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - s, y + s * 1.3);
+    ctx.lineTo(x + s, y + s * 1.3);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Ground line
+    ctx.beginPath();
+    ctx.moveTo(x - s - 4, y + s * 1.3 + 2);
+    ctx.lineTo(x + s + 4, y + s * 1.3 + 2);
+    ctx.stroke();
+  } else if (type === 'roller') {
+    ctx.strokeStyle = '#3b82f6';
+    ctx.fillStyle = 'rgba(59,130,246,0.1)';
+    // Triangle
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - s, y + s);
+    ctx.lineTo(x + s, y + s);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+    // Circle
+    ctx.beginPath();
+    ctx.arc(x, y + s + 6, 5, 0, Math.PI * 2);
+    ctx.stroke();
+    // Ground line
+    ctx.beginPath();
+    ctx.moveTo(x - s - 4, y + s + 13);
+    ctx.lineTo(x + s + 4, y + s + 13);
+    ctx.stroke();
+  } else if (type === 'fixed') {
+    ctx.strokeStyle = '#f59e0b';
+    ctx.fillStyle = 'rgba(245,158,11,0.08)';
+    ctx.fillRect(x - 6, y - s, 12, s * 2);
+    ctx.strokeRect(x - 6, y - s, 12, s * 2);
+    // Hatching
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = '#f59e0b';
+    for (let i = -s; i < s; i += 6) {
+      ctx.beginPath();
+      ctx.moveTo(x - 6, y + i);
+      ctx.lineTo(x - 14, y + i + 8);
+      ctx.stroke();
+    }
+    ctx.lineWidth = 2;
+  }
+}
+
+function drawPointLoad(ctx, x, y, value) {
+  const dir = value < 0 ? 1 : -1; // negative = downward
+  const len = 35;
+  ctx.strokeStyle = '#ef4444';
+  ctx.fillStyle = '#ef4444';
+  ctx.lineWidth = 2;
+
+  const startY = y - dir * len;
+  const endY = y - dir * 4;
+
+  // Line
+  ctx.beginPath();
+  ctx.moveTo(x, startY);
+  ctx.lineTo(x, endY);
+  ctx.stroke();
+
+  // Arrowhead
+  ctx.beginPath();
+  ctx.moveTo(x, endY);
+  ctx.lineTo(x - 5, endY - dir * 8);
+  ctx.lineTo(x + 5, endY - dir * 8);
+  ctx.closePath();
+  ctx.fill();
+
+  // Label
+  ctx.font = 'bold 11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.abs(value)} kN`, x, startY - dir * 6);
+}
+
+function drawDistributedLoad(ctx, x1, x2, y, value) {
+  const dir = value < 0 ? 1 : -1;
+  const arrowLen = 22;
+  ctx.strokeStyle = '#a855f7';
+  ctx.fillStyle = '#a855f7';
+  ctx.lineWidth = 1.5;
+
+  const topY = y - dir * arrowLen;
+
+  // Top line
+  ctx.beginPath();
+  ctx.moveTo(x1, topY);
+  ctx.lineTo(x2, topY);
+  ctx.stroke();
+
+  // Arrows
+  const numArrows = Math.max(3, Math.round((x2 - x1) / 20));
+  for (let i = 0; i <= numArrows; i++) {
+    const x = x1 + (i / numArrows) * (x2 - x1);
+    ctx.beginPath();
+    ctx.moveTo(x, topY);
+    ctx.lineTo(x, y - dir * 3);
+    ctx.stroke();
+    // Small arrowhead
+    ctx.beginPath();
+    ctx.moveTo(x, y - dir * 3);
+    ctx.lineTo(x - 3, y - dir * 8);
+    ctx.lineTo(x + 3, y - dir * 8);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  // Fill
+  ctx.globalAlpha = 0.06;
+  ctx.fillRect(x1, Math.min(topY, y - dir * 3), x2 - x1, Math.abs(arrowLen - 3));
+  ctx.globalAlpha = 1;
+
+  // Label
+  ctx.font = 'bold 11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.abs(value)} kN/m`, (x1 + x2) / 2, topY - dir * 8);
+}
+
+function drawMomentLoad(ctx, x, y, value) {
+  const dir = value > 0 ? 1 : -1;
+  ctx.strokeStyle = '#06b6d4';
+  ctx.fillStyle = '#06b6d4';
+  ctx.lineWidth = 2;
+
+  const r = 14;
+  ctx.beginPath();
+  ctx.arc(x, y, r, -Math.PI * 0.8, Math.PI * 0.5, dir < 0);
+  ctx.stroke();
+
+  // Arrowhead on arc
+  const angle = dir < 0 ? -Math.PI * 0.8 : Math.PI * 0.5;
+  const ax = x + r * Math.cos(angle);
+  const ay = y + r * Math.sin(angle);
+  ctx.beginPath();
+  ctx.arc(ax, ay, 4, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.font = 'bold 11px system-ui';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${Math.abs(value)} kN·m`, x, y - r - 8);
+}
+
+function drawSectionPreview() {
+  const canvas = document.getElementById('section-preview');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  const cx = w / 2, cy = h / 2;
+  const p = state.section.params;
+  const type = state.section.type;
+
+  // Determine scale to fit
+  let maxW, maxH;
+  switch(type) {
+    case 'rectangle': maxW = p.b; maxH = p.h; break;
+    case 'circle': maxW = p.d; maxH = p.d; break;
+    case 'hbeam': maxW = p.B; maxH = p.H; break;
+    case 'hollowRect': maxW = p.B; maxH = p.H; break;
+    case 'tbeam': maxW = p.bf; maxH = p.hw + p.tf; break;
+    case 'channel': maxW = p.B; maxH = p.H; break;
+  }
+  const scale = Math.min((w - 40) / maxW, (h - 20) / maxH);
+
+  ctx.strokeStyle = '#3b82f6';
+  ctx.fillStyle = 'rgba(59,130,246,0.12)';
+  ctx.lineWidth = 1.5;
+
+  switch(type) {
+    case 'rectangle': {
+      const rw = p.b * scale, rh = p.h * scale;
+      ctx.fillRect(cx - rw/2, cy - rh/2, rw, rh);
+      ctx.strokeRect(cx - rw/2, cy - rh/2, rw, rh);
+      break;
+    }
+    case 'circle': {
+      const r = p.d / 2 * scale;
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      break;
+    }
+    case 'hbeam': {
+      const W = p.B * scale, H = p.H * scale;
+      const tf = p.tf * scale, tw = p.tw * scale;
+      ctx.beginPath();
+      // Top flange
+      ctx.rect(cx - W/2, cy - H/2, W, tf);
+      // Bottom flange
+      ctx.rect(cx - W/2, cy + H/2 - tf, W, tf);
+      // Web
+      ctx.rect(cx - tw/2, cy - H/2 + tf, tw, H - 2*tf);
+      ctx.fill();
+      ctx.beginPath();
+      // Outline as I-shape
+      const pts = [
+        [-W/2, -H/2], [W/2, -H/2], [W/2, -H/2+tf], [tw/2, -H/2+tf],
+        [tw/2, H/2-tf], [W/2, H/2-tf], [W/2, H/2], [-W/2, H/2],
+        [-W/2, H/2-tf], [-tw/2, H/2-tf], [-tw/2, -H/2+tf], [-W/2, -H/2+tf]
+      ];
+      ctx.moveTo(cx + pts[0][0], cy + pts[0][1]);
+      for (const pt of pts) ctx.lineTo(cx + pt[0], cy + pt[1]);
+      ctx.closePath();
+      ctx.stroke();
+      break;
+    }
+    case 'hollowRect': {
+      const W = p.B * scale, H = p.H * scale, t = p.t * scale;
+      ctx.fillRect(cx - W/2, cy - H/2, W, H);
+      ctx.strokeRect(cx - W/2, cy - H/2, W, H);
+      ctx.clearRect(cx - W/2 + t, cy - H/2 + t, W - 2*t, H - 2*t);
+      ctx.strokeRect(cx - W/2 + t, cy - H/2 + t, W - 2*t, H - 2*t);
+      break;
+    }
+    case 'tbeam': {
+      const bf = p.bf * scale, tf = p.tf * scale;
+      const hw = p.hw * scale, tw = p.tw * scale;
+      const totalH = hw + tf;
+      ctx.beginPath();
+      const pts = [
+        [-bf/2, -totalH/2], [bf/2, -totalH/2], [bf/2, -totalH/2+tf],
+        [tw/2, -totalH/2+tf], [tw/2, totalH/2], [-tw/2, totalH/2],
+        [-tw/2, -totalH/2+tf], [-bf/2, -totalH/2+tf]
+      ];
+      ctx.moveTo(cx + pts[0][0], cy + pts[0][1]);
+      for (const pt of pts) ctx.lineTo(cx + pt[0], cy + pt[1]);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      break;
+    }
+    case 'channel': {
+      const W = p.B * scale, H = p.H * scale;
+      const tf = p.tf * scale, tw = p.tw * scale;
+      ctx.beginPath();
+      const pts = [
+        [-tw/2, -H/2], [W - tw/2, -H/2], [W - tw/2, -H/2+tf], [tw/2, -H/2+tf],
+        [tw/2, H/2-tf], [W - tw/2, H/2-tf], [W - tw/2, H/2], [-tw/2, H/2]
+      ];
+      ctx.moveTo(cx + pts[0][0], cy + pts[0][1]);
+      for (const pt of pts) ctx.lineTo(cx + pt[0], cy + pt[1]);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      break;
+    }
+  }
+
+  // Centroid marker
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3,3]);
+  ctx.beginPath();
+  ctx.moveTo(cx - 8, cy);
+  ctx.lineTo(cx + 8, cy);
+  ctx.moveTo(cx, cy - 8);
+  ctx.lineTo(cx, cy + 8);
+  ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function drawResults() {
+  const canvas = document.getElementById('results-canvas');
+  const { ctx, w, h } = setupCanvas(canvas);
+  ctx.clearRect(0, 0, w, h);
+
+  if (!state.results) return;
+
+  const r = state.results;
+  const tab = state.activeTab;
+
+  let data, label, unit, color;
+  if (tab === 'deflection') {
+    data = r.deflections.map(d => d * 1000); // m → mm
+    label = 'Deflection';
+    unit = 'mm';
+    color = '#3b82f6';
+  } else if (tab === 'moment') {
+    data = r.moments.map(m => m / 1000); // N·m → kN·m
+    label = 'Bending Moment';
+    unit = 'kN·m';
+    color = '#f59e0b';
+  } else {
+    data = r.shears.map(s => s / 1000); // N → kN
+    label = 'Shear Force';
+    unit = 'kN';
+    color = '#22c55e';
+  }
+
+  const pad = { l: 65, r: 30, t: 30, b: 35 };
+  const pw = w - pad.l - pad.r;
+  const ph = h - pad.t - pad.b;
+
+  const maxVal = Math.max(...data.map(Math.abs));
+  const maxY = maxVal * 1.15 || 1;
+
+  const xPos = (i) => pad.l + (i / (data.length - 1)) * pw;
+  const yPos = (v) => pad.t + ph / 2 - (v / maxY) * (ph / 2);
+
+  // Grid
+  ctx.strokeStyle = '#1e293b';
+  ctx.lineWidth = 1;
+  // Zero line
+  ctx.strokeStyle = '#334155';
+  ctx.beginPath();
+  ctx.moveTo(pad.l, yPos(0));
+  ctx.lineTo(pad.l + pw, yPos(0));
+  ctx.stroke();
+
+  // Horizontal grid lines
+  ctx.strokeStyle = '#1e293b';
+  const gridLines = 4;
+  for (let i = -gridLines; i <= gridLines; i++) {
+    if (i === 0) continue;
+    const v = (i / gridLines) * maxY;
+    const gy = yPos(v);
+    if (gy < pad.t || gy > pad.t + ph) continue;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, gy);
+    ctx.lineTo(pad.l + pw, gy);
+    ctx.stroke();
+
+    ctx.fillStyle = '#64748b';
+    ctx.font = '10px ' + 'system-ui';
+    ctx.textAlign = 'right';
+    ctx.fillText(v.toFixed(2), pad.l - 6, gy + 3);
+  }
+
+  // Filled area
+  ctx.globalAlpha = 0.12;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(xPos(0), yPos(0));
+  for (let i = 0; i < data.length; i++) ctx.lineTo(xPos(i), yPos(data[i]));
+  ctx.lineTo(xPos(data.length - 1), yPos(0));
+  ctx.closePath();
+  ctx.fill();
+  ctx.globalAlpha = 1;
+
+  // Data line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (let i = 0; i < data.length; i++) {
+    const x = xPos(i);
+    const y = yPos(data[i]);
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.stroke();
+
+  // Min/max markers
+  let minVal = Infinity, maxValAct = -Infinity, minIdx = 0, maxIdx = 0;
+  for (let i = 0; i < data.length; i++) {
+    if (data[i] < minVal) { minVal = data[i]; minIdx = i; }
+    if (data[i] > maxValAct) { maxValAct = data[i]; maxIdx = i; }
+  }
+
+  // Show the extreme value marker
+  const extremeIdx = Math.abs(minVal) > Math.abs(maxValAct) ? minIdx : maxIdx;
+  const extremeVal = data[extremeIdx];
+  if (Math.abs(extremeVal) > 1e-10) {
+    const ex = xPos(extremeIdx);
+    const ey = yPos(extremeVal);
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(ex, ey, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#f1f5f9';
+    ctx.font = 'bold 11px system-ui';
+    ctx.textAlign = 'center';
+    const labelY = extremeVal > 0 ? ey - 12 : ey + 16;
+    ctx.fillText(`${extremeVal.toFixed(3)} ${unit}`, ex, labelY);
+  }
+
+  // X-axis labels
+  ctx.fillStyle = '#64748b';
+  ctx.font = '10px system-ui';
+  ctx.textAlign = 'center';
+  const numLabels = Math.min(6, data.length);
+  for (let i = 0; i <= numLabels; i++) {
+    const idx = Math.round((i / numLabels) * (data.length - 1));
+    const pos = (idx * r.elemLen).toFixed(2);
+    ctx.fillText(`${pos}m`, xPos(idx), pad.t + ph + 16);
+  }
+
+  // Title
+  ctx.fillStyle = '#94a3b8';
+  ctx.font = '12px system-ui';
+  ctx.textAlign = 'left';
+  ctx.fillText(`${label} (${unit})`, pad.l, pad.t - 10);
+}
+
+// ============================================================
+// RESIZE HANDLING
+// ============================================================
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => {
+    drawBeam();
+    drawSectionPreview();
+    if (state.results) drawResults();
+  }, 100);
+});
+
+// ============================================================
+// INITIALIZATION
+// ============================================================
+function init() {
+  buildSectionForm();
+  updateState();
+
+  // Register service worker for PWA
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+
+init();
+</script>
+</body>
+</html>
